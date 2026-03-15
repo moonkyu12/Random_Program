@@ -15,7 +15,7 @@ APP_TITLE = "School Random Program"
 WINDOW_WIDTH = 1920
 WINDOW_HEIGHT = 1360
 APP_ICON_FILE = "app_icon.ico"
-
+# 인생은 끝이없고 난 왜 이딴것만 하는건짐 모르겠다.
 RAW_BASE_URL = "https://raw.githubusercontent.com/moonkyu12/School-Random-Program/main"
 REQUEST_TIMEOUT_SECONDS = 4
 LIVE_CACHE_DIRNAME = "live_repo_cache"
@@ -26,7 +26,7 @@ ROUTES = {
     "/style.css": "style.css",
     "/script.js": "script.js",
 }
-
+# 에헤헿.....뜌땨 우땨땨
 CONTENT_TYPES = {
     "index.html": "text/html; charset=utf-8",
     "style.css": "text/css; charset=utf-8",
@@ -39,7 +39,7 @@ def runtime_dir() -> Path:
         return Path(getattr(sys, "_MEIPASS", Path(sys.executable).resolve().parent))
     return Path(__file__).resolve().parent
 
-
+# function - 0.1 = fuck
 def live_cache_dir() -> Path:
     local_app_data = os.getenv("LOCALAPPDATA")
     if local_app_data:
@@ -56,14 +56,14 @@ def fetch_remote_payload(filename: str) -> bytes:
     with urllib.request.urlopen(remote_url, timeout=REQUEST_TIMEOUT_SECONDS) as response:
         return response.read()
 
-
+# 아니 야비쉬 PyQt6시부꺼 작명센스 개구리네
 def import_qt_modules():
     from PyQt6.QtCore import QUrl
     from PyQt6.QtGui import QIcon
     from PyQt6.QtWebEngineCore import QWebEngineProfile
     from PyQt6.QtWebEngineWidgets import QWebEngineView
-    from PyQt6.QtWidgets import QApplication
-    return QUrl, QIcon, QWebEngineProfile, QWebEngineView, QApplication
+    from PyQt6.QtWidgets import QApplication # QApplication은 어휴....인생....
+    return QUrl, QIcon, QWebEngineProfile, QWebEngineView, QApplication #에헤헤 리턴뒤에 이건 몰라?
 
 
 def install_missing_requirements() -> bool:
@@ -72,10 +72,10 @@ def install_missing_requirements() -> bool:
 
     req_file = runtime_dir() / "requirements.txt"
     if not req_file.exists():
-        print(f"requirements.txt 파일이 없습니다: {req_file}")
+        print(f"requirements.txt 파일이 없습니다: {req_file}") # 사실 있다 멍청아
         return False
 
-    print("필수 패키지가 없어 requirements.txt 자동 설치를 시작합니다...")
+    print("필수 패키지가 없어 requirements.txt"" 자동 설치를 시작합니다...")# print requirements를 걍 깔게 할껄 그랬나 아니다...
     try:
         subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", str(req_file)])
         return True
@@ -96,7 +96,7 @@ class LiveRepoHandler(BaseHTTPRequestHandler):
         self.send_response(HTTPStatus.OK)
         self.send_header("Content-Type", CONTENT_TYPES[filename])
         self.send_header("Cache-Control", "no-store")
-        self.send_header("X-Source", source)
+        self.send_header("X-Source", source) # 아...약탈자 쉐리프 제발~~~뜨게해주세요
         self.send_header("Content-Length", str(len(payload)))
         self.end_headers()
         self.wfile.write(payload)
@@ -122,7 +122,7 @@ class LiveRepoHandler(BaseHTTPRequestHandler):
 
     @classmethod
     def get_cached_payload(cls, filename: str) -> bytes | None:
-        with cls.cache_lock:
+        with cls.cache_lock:# 나는 말한다 그로 존재한다..하지만 존재하지 않는다...왜냐고? 몰라 내가 알면 신이지
             payload = cls.cache.get(filename)
         if payload is not None:
             return payload
@@ -171,7 +171,7 @@ class LiveRepoHandler(BaseHTTPRequestHandler):
         filename = ROUTES.get(path)
         if filename is None:
             self.send_error(HTTPStatus.NOT_FOUND, "Not Found")
-            return
+            return # 아~ 리턴 그는 신이야~
 
         cached = type(self).get_cached_payload(filename)
         if cached is not None:
@@ -183,7 +183,7 @@ class LiveRepoHandler(BaseHTTPRequestHandler):
         try:
             payload = fetch_remote_payload(filename)
         except (urllib.error.URLError, TimeoutError):
-            self.send_error(HTTPStatus.BAD_GATEWAY, "Cannot load source from GitHub right now.")
+            self.send_error(HTTPStatus.BAD_GATEWAY, "Cannot load source from GitHub right now.") # 굳이 도커를 써야할까? (어 써야되) 응 싫어~
             return
 
         type(self).store_payload(filename, payload)
@@ -211,7 +211,7 @@ def main() -> int:
         QUrl, QIcon, QWebEngineProfile, QWebEngineView, QApplication = import_qt_modules()
     except ImportError:
         if not install_missing_requirements():
-            print("PyQt6 또는 PyQt6-WebEngine이 설치되지 않았습니다.")
+            print("PyQt6 또는 PyQt6-WebEngine이 설치되지 않았습니다.")# 에러문 어쩌피 없을꺼 같은데 이귀찮은걸 내가 왜하는거지...
             print("다음 명령으로 설치 후 다시 실행하세요: pip install -r requirements.txt")
             return 1
         try:
@@ -223,7 +223,7 @@ def main() -> int:
 
     server, port = start_live_server()
     app_url = f"http://127.0.0.1:{port}/"
-    try:
+    try:# 곧 끝지 오는데 왜 에러가 나는거냐?
         app = QApplication(sys.argv)
         icon_path = runtime_dir() / APP_ICON_FILE
         app_icon = QIcon(str(icon_path)) if icon_path.exists() else QIcon()
@@ -234,8 +234,8 @@ def main() -> int:
         window = QWebEngineView()
         if not app_icon.isNull():
             app.setWindowIcon(app_icon)
-            window.setWindowIcon(app_icon)
-        window.setWindowTitle(APP_TITLE)
+            window.setWindowIcon(app_icon)# 얘떄문이였어 얘를 안둔거였어 이!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        window.setWindowTitle(APP_TITLE)# EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
         window.resize(WINDOW_WIDTH, WINDOW_HEIGHT)
         window.load(QUrl(app_url))
         window.show()
@@ -248,3 +248,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+# 끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝 끝이다!!!!!!!!
