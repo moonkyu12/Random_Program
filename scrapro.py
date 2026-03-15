@@ -12,8 +12,8 @@ from urllib.parse import urlsplit
 import urllib.error
 import urllib.request
 APP_TITLE = "School Random Program"
-WINDOW_WIDTH = 1920
-WINDOW_HEIGHT = 1360
+WINDOW_WIDTH = 1440
+WINDOW_HEIGHT = 900
 APP_ICON_FILE = "app_icon.ico"
 # 인생은 끝이없고 난 왜 이딴것만 하는건짐 모르겠다..
 RAW_BASE_URL = "https://raw.githubusercontent.com/moonkyu12/School-Random-Program/main"
@@ -59,11 +59,11 @@ def fetch_remote_payload(filename: str) -> bytes:
 # 아니 야비쉬 PyQt6시부꺼 작명센스 개구리네
 def import_qt_modules():
     from PyQt6.QtCore import QUrl
-    from PyQt6.QtGui import QIcon
+    from PyQt6.QtGui import QIcon, QKeySequence, QShortcut
     from PyQt6.QtWebEngineCore import QWebEngineProfile
     from PyQt6.QtWebEngineWidgets import QWebEngineView
     from PyQt6.QtWidgets import QApplication # QApplication은 어휴....인생....
-    return QUrl, QIcon, QWebEngineProfile, QWebEngineView, QApplication #에헤헤 리턴뒤에 이건 몰라?
+    return QUrl, QIcon, QKeySequence, QShortcut, QWebEngineProfile, QWebEngineView, QApplication #에헤헤 리턴뒤에 이건 몰라?
 
 
 def install_missing_requirements() -> bool:
@@ -208,14 +208,14 @@ def start_live_server() -> tuple[ThreadingHTTPServer, int]:
 
 def main() -> int:
     try:
-        QUrl, QIcon, QWebEngineProfile, QWebEngineView, QApplication = import_qt_modules()
+        QUrl, QIcon, QKeySequence, QShortcut, QWebEngineProfile, QWebEngineView, QApplication = import_qt_modules()
     except ImportError:
         if not install_missing_requirements():
             print("PyQt6 또는 PyQt6-WebEngine이 설치되지 않았습니다.")# 에러문 어쩌피 없을꺼 같은데 이귀찮은걸 내가 왜하는거지...
             print("다음 명령으로 설치 후 다시 실행하세요: pip install -r requirements.txt")
             return 1
         try:
-            QUrl, QIcon, QWebEngineProfile, QWebEngineView, QApplication = import_qt_modules()
+            QUrl, QIcon, QKeySequence, QShortcut, QWebEngineProfile, QWebEngineView, QApplication = import_qt_modules()
         except ImportError:
             print("자동 설치 후에도 PyQt6 로드에 실패했습니다.")
             return 1
@@ -238,6 +238,15 @@ def main() -> int:
         window.setWindowTitle(APP_TITLE)# EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
         window.resize(WINDOW_WIDTH, WINDOW_HEIGHT)
         window.load(QUrl(app_url))
+        def toggle_fullscreen() -> None:
+            if window.isFullScreen():
+                window.showNormal()
+            else:
+                window.showFullScreen()
+
+        fullscreen_shortcut = QShortcut(QKeySequence("F11"), window)
+        fullscreen_shortcut.activated.connect(toggle_fullscreen)
+        window._fullscreen_shortcut = fullscreen_shortcut
         window.show()
 
         return app.exec()
