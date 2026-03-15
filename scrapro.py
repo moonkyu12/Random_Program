@@ -39,6 +39,17 @@ def runtime_dir() -> Path:
         return Path(getattr(sys, "_MEIPASS", Path(sys.executable).resolve().parent))
     return Path(__file__).resolve().parent
 
+
+def read_local_payload(filename: str) -> bytes | None:
+    target = runtime_dir() / filename
+    if not target.exists():
+        return None
+    try:
+        return target.read_bytes()
+    except OSError:
+        return None
+
+
 # function - 0.1 = fuck
 def live_cache_dir() -> Path:
     local_app_data = os.getenv("LOCALAPPDATA")
@@ -173,16 +184,14 @@ class LiveRepoHandler(BaseHTTPRequestHandler):
             self.send_error(HTTPStatus.NOT_FOUND, "Not Found")
             return # 아~ 리턴 그는 신이야~
 
-        cached = type(self).get_cached_payload(filename)
-        if cached is not None:
-            self._send_payload(filename, cached, "cache")
-            type(self).schedule_background_refresh(filename)
-            return
-
         payload: bytes
         try:
             payload = fetch_remote_payload(filename)
         except (urllib.error.URLError, TimeoutError):
+            cached = type(self).get_cached_payload(filename)
+            if cached is not None:
+                self._send_payload(filename, cached, "cache")
+                return
             self.send_error(HTTPStatus.BAD_GATEWAY, "Cannot load source from GitHub right now.") # 굳이 도커를 써야할까? (어 써야되) 응 싫어~
             return
 
@@ -202,9 +211,30 @@ def start_live_server() -> tuple[ThreadingHTTPServer, int]:
     server = ThreadingHTTPServer(("127.0.0.1", port), LiveRepoHandler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
-    for filename in sorted(set(ROUTES.values())):
-        LiveRepoHandler.schedule_background_refresh(filename)
     return server, port
+
+
+def default_download_dir() -> Path:
+    downloads = Path.home() / "Downloads"
+    if downloads.exists():
+        return downloads
+    return Path.home()
+
+
+def pick_unique_download_target(directory: Path, filename: str) -> Path:
+    safe_name = Path(filename).name.strip() or "download.bin"
+    candidate = directory / safe_name
+    if not candidate.exists():
+        return candidate
+
+    stem = candidate.stem or "download"
+    suffix = candidate.suffix
+    idx = 1
+    while True:
+        renamed = directory / f"{stem} ({idx}){suffix}"
+        if not renamed.exists():
+            return renamed
+        idx += 1
 
 def main() -> int:
     try:
@@ -231,7 +261,23 @@ def main() -> int:
         profile.setHttpCacheType(QWebEngineProfile.HttpCacheType.MemoryHttpCache)
         profile.setPersistentCookiesPolicy(QWebEngineProfile.PersistentCookiesPolicy.NoPersistentCookies)
 
+        def handle_download(download) -> None:
+            suggested = download.downloadFileName() or Path(download.url().path()).name or "download.bin"
+            target = pick_unique_download_target(default_download_dir(), suggested)
+            try:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                download.setDownloadDirectory(str(target.parent))
+                download.setDownloadFileName(target.name)
+                download.accept()
+                print(f"다운로드 시작: {target}")
+            except Exception as err:
+                print(f"다운로드 처리 실패: {err}")
+                download.cancel()
+
+        profile.downloadRequested.connect(handle_download)
+
         window = QWebEngineView()
+        window._download_handler = handle_download
         if not app_icon.isNull():
             app.setWindowIcon(app_icon)
             window.setWindowIcon(app_icon)# 얘떄문이였어 얘를 안둔거였어 이!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
