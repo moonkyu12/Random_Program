@@ -11,7 +11,6 @@ import threading
 from urllib.parse import urlsplit
 import urllib.error
 import urllib.request
-# 캬~ 역시 AI가 이런 정렬은 잘해 스파게티 만들뻔,,,,
 APP_TITLE = "School Random Program"
 WINDOW_WIDTH = 1920
 WINDOW_HEIGHT = 1360
@@ -69,7 +68,6 @@ def import_qt_modules():
 
 def install_missing_requirements() -> bool:
     if getattr(sys, "frozen", False):
-        # EXE(onefile)에서는 런타임 패키지 설치를 시도하지 않습니다.
         return False
 
     req_file = runtime_dir() / "requirements.txt"
@@ -225,7 +223,6 @@ def main() -> int:
 
     server, port = start_live_server()
     app_url = f"http://127.0.0.1:{port}/"
-
     try:
         app = QApplication(sys.argv)
         icon_path = runtime_dir() / APP_ICON_FILE
