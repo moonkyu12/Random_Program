@@ -3,6 +3,7 @@ from __future__ import annotations
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+import os
 import socket
 import subprocess
 import sys
@@ -10,14 +11,14 @@ import threading
 from urllib.parse import urlsplit
 import urllib.error
 import urllib.request
-# 캬~ 역시 AI가 이런 정렬은 잘해 스파게티 만들뻔,,,,
 APP_TITLE = "School Random Program"
 WINDOW_WIDTH = 1920
 WINDOW_HEIGHT = 1360
 APP_ICON_FILE = "app_icon.ico"
 
 RAW_BASE_URL = "https://raw.githubusercontent.com/moonkyu12/School-Random-Program/main"
-REQUEST_TIMEOUT_SECONDS = 10
+REQUEST_TIMEOUT_SECONDS = 4
+LIVE_CACHE_DIRNAME = "live_repo_cache"
 
 ROUTES = {
     "/": "index.html",
@@ -39,6 +40,23 @@ def runtime_dir() -> Path:
     return Path(__file__).resolve().parent
 
 
+def live_cache_dir() -> Path:
+    local_app_data = os.getenv("LOCALAPPDATA")
+    if local_app_data:
+        return Path(local_app_data) / APP_TITLE / LIVE_CACHE_DIRNAME
+    return Path.home() / ".cache" / "school-random-program" / LIVE_CACHE_DIRNAME
+
+
+def cache_file_path(filename: str) -> Path:
+    return live_cache_dir() / filename
+
+
+def fetch_remote_payload(filename: str) -> bytes:
+    remote_url = f"{RAW_BASE_URL}/{filename}"
+    with urllib.request.urlopen(remote_url, timeout=REQUEST_TIMEOUT_SECONDS) as response:
+        return response.read()
+
+
 def import_qt_modules():
     from PyQt6.QtCore import QUrl
     from PyQt6.QtGui import QIcon
@@ -50,7 +68,6 @@ def import_qt_modules():
 
 def install_missing_requirements() -> bool:
     if getattr(sys, "frozen", False):
-        # EXE(onefile)에서는 런타임 패키지 설치를 시도하지 않습니다.
         return False
 
     req_file = runtime_dir() / "requirements.txt"
@@ -68,36 +85,14 @@ def install_missing_requirements() -> bool:
 
 
 class LiveRepoHandler(BaseHTTPRequestHandler):
-    # Network error 시 마지막 정상 응답본을 잠시 사용하고싶었다
-    # 크~ 뭔 애런가 했더니 오브젝트가 걍 없던거였어 개같은거
     cache: dict[str, bytes] = {}
+    cache_lock = threading.Lock()
+    refresh_in_flight: set[str] = set()
 
     def log_message(self, fmt: str, *args: object) -> None:
         return
-    # do
-    def do_GET(self) -> None: #왜들 그리 다운돼있어. 뭐가 문제야 say something 분위기가 검나 싸해 캬 좋당
-        path = urlsplit(self.path).path
-        filename = ROUTES.get(path)
-        if filename is None:
-            self.send_error(HTTPStatus.NOT_FOUND, "Not Found")
-            return
 
-        remote_url = f"{RAW_BASE_URL}/{filename}"
-        payload: bytes
-        source = "live" # 라~~~~~~이.....뭘까요~?
-
-        try:
-            with urllib.request.urlopen(remote_url, timeout=REQUEST_TIMEOUT_SECONDS) as response:
-                payload = response.read()
-            self.cache[filename] = payload # 비와이 가라사대 깝치지 말지어다 넌 나를 위로 볼 지어다 역사로 살 지어다 증인의 삶이 될 지어다 여기를 밝힐 지어다 여길 다 삼킬 지어다 구와 신의 기준이 나일 지어다 그게 나일 지어다 비와이 가라사대 리더는 날 따를 지어다 난 선구자일 지어다 돈은 날 찾을 지어다 내 이름의 시대를 만들 지어다 한글은 팔릴 지어다 잔들을 따를 지어다 나는 되고 싶은 내가 될 지어다 내가 될 지어다 비와이 가라사대 보기나 해 bish 가라사대 모든 것 위 가라사대 여호와 밑 가라사대 이게 내 위치 가라사대 내 어젠 이제 가라사대 전설이 돼 가라사대 열매를 맺어 가라사대 비와이 가라사대 비와이 가라사대 비와이 가라사대 비와이 가라사대 그게 나일 지어다 삶으로 나를 뱉어대 역사들은 새겨 댈걸 짭들은 베껴 대 진짜들은 말했어 내 건 최고 최초 내 날들은 매일매일 또 매번 배꼽 잡어 배고파도 내걸 만들어 새 걸 창조 계속하고 패권 잡어 배부른 날로 랩으로 바꿔 래퍼는 닥쳐 현재의 고난도 애써 참을 어제로 남아 여태껏 하던 대로 중심은 나일 지어다 신의 형상일 지어다 세상은 내 손 안일 지어다 영광의 면류관이 날 가질 지어다 기준을 제시할 지어다 미래를 계시할 지어다 가짜는 후회에 살 지어다 나는 그 위에 살 지어다 비와이 가라사대 보기나 해 bish 가라사대 모든 것 위 가라사대 여호와 밑 가라사대 이게 내 위치 가라사대 내 어젠 이제 가라사대 전설이 돼 가라사대 열매를 맺어 가라사대 비와이 가라사대 비와이 가라사대 비와이 가라사대 비와이 가라사대 그게 나일 지어다 비와이 가라사대
-        except (urllib.error.URLError, TimeoutError):
-            cached = self.cache.get(filename)
-            if cached is None:
-                self.send_error(HTTPStatus.BAD_GATEWAY, "Cannot load source from GitHub right now.")
-                return
-            payload = cached
-            source = "cache"
-
+    def _send_payload(self, filename: str, payload: bytes, source: str) -> None:
         self.send_response(HTTPStatus.OK)
         self.send_header("Content-Type", CONTENT_TYPES[filename])
         self.send_header("Cache-Control", "no-store")
@@ -105,6 +100,94 @@ class LiveRepoHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(payload)))
         self.end_headers()
         self.wfile.write(payload)
+
+    @classmethod
+    def _read_disk_cache(cls, filename: str) -> bytes | None:
+        target = cache_file_path(filename)
+        if not target.exists():
+            return None
+        try:
+            return target.read_bytes()
+        except OSError:
+            return None
+
+    @classmethod
+    def _write_disk_cache(cls, filename: str, payload: bytes) -> None:
+        target = cache_file_path(filename)
+        try:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(payload)
+        except OSError:
+            return
+
+    @classmethod
+    def get_cached_payload(cls, filename: str) -> bytes | None:
+        with cls.cache_lock:
+            payload = cls.cache.get(filename)
+        if payload is not None:
+            return payload
+
+        payload = cls._read_disk_cache(filename)
+        if payload is None:
+            return None
+
+        with cls.cache_lock:
+            cls.cache[filename] = payload
+        return payload
+
+    @classmethod
+    def store_payload(cls, filename: str, payload: bytes) -> None:
+        with cls.cache_lock:
+            cls.cache[filename] = payload
+        cls._write_disk_cache(filename, payload)
+
+    @classmethod
+    def _background_refresh(cls, filename: str) -> None:
+        try:
+            payload = fetch_remote_payload(filename)
+            cls.store_payload(filename, payload)
+        except (urllib.error.URLError, TimeoutError):
+            pass
+        finally:
+            with cls.cache_lock:
+                cls.refresh_in_flight.discard(filename)
+
+    @classmethod
+    def schedule_background_refresh(cls, filename: str) -> None:
+        with cls.cache_lock:
+            if filename in cls.refresh_in_flight:
+                return
+            cls.refresh_in_flight.add(filename)
+        thread = threading.Thread(target=cls._background_refresh, args=(filename,), daemon=True)
+        thread.start()
+
+    @classmethod
+    def warm_cache_from_disk(cls) -> None:
+        for filename in sorted(set(ROUTES.values())):
+            cls.get_cached_payload(filename)
+
+    def do_GET(self) -> None:
+        path = urlsplit(self.path).path
+        filename = ROUTES.get(path)
+        if filename is None:
+            self.send_error(HTTPStatus.NOT_FOUND, "Not Found")
+            return
+
+        cached = type(self).get_cached_payload(filename)
+        if cached is not None:
+            self._send_payload(filename, cached, "cache")
+            type(self).schedule_background_refresh(filename)
+            return
+
+        payload: bytes
+        try:
+            payload = fetch_remote_payload(filename)
+        except (urllib.error.URLError, TimeoutError):
+            self.send_error(HTTPStatus.BAD_GATEWAY, "Cannot load source from GitHub right now.")
+            return
+
+        type(self).store_payload(filename, payload)
+        self._send_payload(filename, payload, "live")
 
 
 def pick_free_port() -> int:
@@ -114,13 +197,15 @@ def pick_free_port() -> int:
 
 
 def start_live_server() -> tuple[ThreadingHTTPServer, int]:
+    LiveRepoHandler.warm_cache_from_disk()
     port = pick_free_port()
     server = ThreadingHTTPServer(("127.0.0.1", port), LiveRepoHandler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
+    for filename in sorted(set(ROUTES.values())):
+        LiveRepoHandler.schedule_background_refresh(filename)
     return server, port
 
-# PyQt6가 진짜 뭔임? ㅈㄴ모르것다....
 def main() -> int:
     try:
         QUrl, QIcon, QWebEngineProfile, QWebEngineView, QApplication = import_qt_modules()
@@ -138,14 +223,12 @@ def main() -> int:
 
     server, port = start_live_server()
     app_url = f"http://127.0.0.1:{port}/"
-
-# Q는 진짜 왜 붙는데...걍 Application으로 하면 뭐 죽냐? 참....
     try:
         app = QApplication(sys.argv)
         icon_path = runtime_dir() / APP_ICON_FILE
         app_icon = QIcon(str(icon_path)) if icon_path.exists() else QIcon()
         profile = QWebEngineProfile.defaultProfile()
-        profile.setHttpCacheType(QWebEngineProfile.HttpCacheType.NoCache)
+        profile.setHttpCacheType(QWebEngineProfile.HttpCacheType.MemoryHttpCache)
         profile.setPersistentCookiesPolicy(QWebEngineProfile.PersistentCookiesPolicy.NoPersistentCookies)
 
         window = QWebEngineView()
@@ -165,4 +248,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-# 끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝끝
