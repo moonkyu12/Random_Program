@@ -37,7 +37,7 @@ CONTENT_TYPES = {
 def runtime_dir() -> Path:
     if getattr(sys, "frozen", False):
         return Path(getattr(sys, "_MEIPASS", Path(sys.executable).resolve().parent))
-    return Path(__file__).resolve().parent
+    return Path(__file__).resolve().parent # runtime_dir 뭐 반환하는ㅇ거고 일다ㅏㄴ은
 
 
 def read_local_payload(filename: str) -> bytes | None:
