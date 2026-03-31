@@ -16,7 +16,7 @@ WINDOW_WIDTH = 1440
 WINDOW_HEIGHT = 900
 APP_ICON_FILE = "app_icon.ico"
 # 인생은 끝이없고 난 왜 이딴것만 하는건짐 모르겠다..
-RAW_BASE_URL = "https://raw.githubusercontent.com/moonkyu12/School-Random-Program/main"
+RAW_BASE_URL = "https://raw.githubusercontent.com/moonkyu12/Random_Page/main"
 REQUEST_TIMEOUT_SECONDS = 4
 LIVE_CACHE_DIRNAME = "live_repo_cache"
 
