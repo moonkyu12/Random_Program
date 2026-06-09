@@ -8,3 +8,6 @@ venv/
 build/
 dist/
 *.spec
+
+obj/
+bin/
