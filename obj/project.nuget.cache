@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "dgSpecHash": "SoFJ6ucFnLA=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\moonk\\Desktop\\Random_PG\\webview2_restore.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\moonk\\Desktop\\Random_PG\\packages\\microsoft.web.webview2\\1.0.2903.40\\microsoft.web.webview2.1.0.2903.40.nupkg.sha512",
+    "C:\\Users\\moonk\\Desktop\\Random_PG\\packages\\microsoft.netcore.app.ref\\8.0.27\\microsoft.netcore.app.ref.8.0.27.nupkg.sha512",
+    "C:\\Users\\moonk\\Desktop\\Random_PG\\packages\\microsoft.windowsdesktop.app.ref\\8.0.27\\microsoft.windowsdesktop.app.ref.8.0.27.nupkg.sha512",
+    "C:\\Users\\moonk\\Desktop\\Random_PG\\packages\\microsoft.aspnetcore.app.ref\\8.0.27\\microsoft.aspnetcore.app.ref.8.0.27.nupkg.sha512"
+  ],
+  "logs": []
+}
