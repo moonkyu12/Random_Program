@@ -11,3 +11,5 @@ dist/
 
 obj/
 bin/
+package/
+.vs/
