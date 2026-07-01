@@ -1,14 +1,3 @@
-# Python cache/venv
-__pycache__/
-*.py[cod]
-venv/
-.venv/
-
-# Build outputs
-build/
-dist/
-*.spec
-
 obj/
 bin/
 package/
